@@ -24,27 +24,43 @@ Hint: Do not leak file descriptors! */
 #include <unistd.h>
 #include <stdlib.h>
 
+
+
+
+//logic: 
+//if type is r - parent should receive (read from) the command's output, so the pipe should write to the command's stdout
+//if type is w - parent should send (write) to the command's input, so the pipe should read from the command's stdin
 int ft_popen(const char *file, char *const av[], int type)
 {
     if(!file || !av || (type != 'r' && type !='w' ))
         return -1;
 
+    //create pipe
     int fd[2];
     if (pipe(fd) < 0)
         return -1;
+
+
+    //create child process
     pid_t pid = fork();
     if (pid < 0) {
-        close(fd[1]);
-        close(fd[0]);
+        close(fd[0]);//read end
+        close(fd[1]);// wirte end
         return -1;
     }
+
+
     if(pid == 0) {
-        if(type == 'r') {
+        //main logic
+        if(type == 'r') 
+        {
+            //Redirect the command’s stdout to pipe’s write end.
             close(fd[0]);
             if(dup2(fd[1], STDOUT_FILENO) < 0)
                 exit (-1);
         } else {
             close(fd[1]);
+            //Redirect the command’s stdin to pipe’s read end.
             if(dup2(fd[0], STDIN_FILENO) < 0)
                 exit (-1);
         }
@@ -53,11 +69,16 @@ int ft_popen(const char *file, char *const av[], int type)
         execvp(file, av);
         exit (-1);
     }
+    //parent process
     if (type == 'r') {
+        // Close write-end
         close(fd[1]);
+        // Return read-end of the pipe
         return (fd[0]);
     } else {
+        // Close read-end
         close(fd[0]);
+        // Return write-end of the pipe
         return (fd[1]);
     }
 }

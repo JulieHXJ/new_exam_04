@@ -41,7 +41,9 @@ int picoshell(char **cmds[])
 {
     int i = 0;
     int fd[2];
-    int in_fd = 0;//stdin
+    int in_fd = 0;//the previous command's output and the next command's input
+    // if in_fd is 0, it means the input is from stdin
+    // if in_fd is not 0, it means the input is from the previous command's output
     pid_t pid;
     int has_next = 0;
 
@@ -54,8 +56,11 @@ int picoshell(char **cmds[])
         {
                 return 1;
         }
+
+
+
         pid = fork();
-        // create chil failed
+        // create child failed
         if (pid < 0)
         {
             if (has_next)
@@ -152,10 +157,10 @@ int main(int argc, char *argv[])
         }
     }
     int ret = picoshell(cmds);
-    if (ret == 1)
-    {
-        perror("picoshell");
-    }
+    // if (ret == 1)
+    // {
+    //     perror("picoshell");
+    // }
     free(cmds);
     return ret;
 }
