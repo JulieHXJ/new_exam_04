@@ -40,7 +40,7 @@ squblblb/
 int picoshell(char **cmds[])
 {
     int i = 0;
-    int fd[2];
+    int fd[2] = {-1, -1};
     int in_fd = 0;//the previous command's output and the next command's input
     // if in_fd is 0, it means the input is from stdin
     // if in_fd is not 0, it means the input is from the previous command's output
@@ -113,12 +113,20 @@ int picoshell(char **cmds[])
         if (has_next)
         {
             close(fd[1]);
+            in_fd = fd[0];
         }
+        else
+        {
+            in_fd = 0;
+        }
+            
         // store the read end of the pipe for the next command
-        in_fd = fd[0];
         i++;
     }
-
+    if (in_fd != 0)
+    {
+        close(in_fd);
+    }
     //waiting for all children
     int status;
     int ret = 0;
