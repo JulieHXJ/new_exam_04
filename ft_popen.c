@@ -34,52 +34,39 @@ int ft_popen(const char *file, char *const av[], int type)
 {
     if(!file || !av || (type != 'r' && type !='w' ))
         return -1;
-
-    //create pipe
     int fd[2];
     if (pipe(fd) < 0)
         return -1;
-
-
-    //create child process
     pid_t pid = fork();
     if (pid < 0) {
         close(fd[0]);//read end
         close(fd[1]);// wirte end
         return -1;
     }
-
-
+    //child process
     if(pid == 0) {
-        //main logic
         if(type == 'r') 
         {
-            //Redirect the command’s stdout to pipe’s write end.
             close(fd[0]);
-            if(dup2(fd[1], STDOUT_FILENO) < 0)
+            if(dup2(fd[1], STDOUT_FILENO) < 0)//Redirect the command’s stdout to pipe’s write end.
                 exit (-1);
+            close(fd[1]);
         } else {
             close(fd[1]);
-            //Redirect the command’s stdin to pipe’s read end.
-            if(dup2(fd[0], STDIN_FILENO) < 0)
+            if(dup2(fd[0], STDIN_FILENO) < 0) //Redirect the command’s stdin to pipe’s read end.
                 exit (-1);
+            close(fd[0]);
         }
-        close(fd[0]);
-        close(fd[1]);
         execvp(file, av);
         exit (-1);
     }
     //parent process
     if (type == 'r') {
-        // Close write-end
-        close(fd[1]);
-        // Return read-end of the pipe
-        return (fd[0]);
+        close(fd[1]);// Close write-end
+        return (fd[0]);// Return read-end of the pipe
     } else {
-        // Close read-end
-        close(fd[0]);
-        // Return write-end of the pipe
-        return (fd[1]);
+        close(fd[0]);// Close read-end
+        return (fd[1]);// Return write-end of the pipe
     }
 }
 
