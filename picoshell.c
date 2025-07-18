@@ -42,25 +42,16 @@ int picoshell(char **cmds[])
     int i = 0;
     int fd[2] = {-1, -1};
     int in_fd = 0;//the previous command's output and the next command's input
-    // if in_fd is 0, it means the input is from stdin
-    // if in_fd is not 0, it means the input is from the previous command's output
     pid_t pid;
     int has_next = 0;
-
 
     while (cmds[i])
     {
         // Create a pipe if there's a next command
         has_next = cmds[i + 1] != NULL;
         if (has_next && pipe(fd) == -1)
-        {
                 return 1;
-        }
-
-
-
         pid = fork();
-        // create child failed
         if (pid < 0)
         {
             if (has_next)
@@ -70,14 +61,9 @@ int picoshell(char **cmds[])
                 close(fd[1]);
             }
             if (in_fd != 0)
-            {
-                //means it was left from previous command
-                close(in_fd);
-            }
+                close(in_fd);//means it was left from previous command
             return 1;
         }
-
-
         //chile process
         if (pid == 0) 
         {
@@ -89,7 +75,6 @@ int picoshell(char **cmds[])
                     exit(1);
                 close(in_fd);//close after using
             }
-
             //redirect stdout to the pipe out
             if (has_next) 
             {
@@ -103,30 +88,19 @@ int picoshell(char **cmds[])
         }
 
         // Parent
-
-        // close the previous input fd
         if (in_fd != 0)
-        {
-            close(in_fd);
-        }
-        // close the pipe's write end
+            close(in_fd);// close the previous input fd
         if (has_next)
         {
-            close(fd[1]);
-            in_fd = fd[0];
+            close(fd[1]); // close the pipe's write end
+            in_fd = fd[0]; // store the read end of the pipe for the next command
         }
         else
-        {
             in_fd = 0;
-        }
-            
-        // store the read end of the pipe for the next command
         i++;
     }
     if (in_fd != 0)
-    {
         close(in_fd);
-    }
     //waiting for all children
     int status;
     int ret = 0;

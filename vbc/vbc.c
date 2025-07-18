@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>    // MOD: on utilise <stdlib.h> pour calloc/free au lieu de <malloc.h>
+#include <stdlib.h>    // MOD: use  <stdlib.h> instead of <malloc.h>
 #include <ctype.h>
 
 typedef struct node {
@@ -34,19 +34,18 @@ void destroy_tree(node *n)
     free(n);
 }
 
-//prints the correct error message
+//prints error message
 void unexpected(char c)
 {
     if (c)
         printf("Unexpected token '%c'\n", c);
     else
-        printf("Unexpected end of input\n");  // MODIFIED: correct message according to the subject
+        printf("Unexpected end of input\n"); 
 }
 
 // increment the pointer if the current char matches c
 int accept(char **s, char c)
 {
-	/* MODIFIED: accept/expect remises à la signature d’origine, sans global */
     if (**s == c) {
         (*s)++;
         return 1;
@@ -54,8 +53,6 @@ int accept(char **s, char c)
     return 0;
 }
 
-//If matches → it advances the pointer and returns 1 (success).
-// If not match → print an error message using unexpected(), and returns 0.
 int expect(char **s, char c)
 {
     if (accept(s, c))
@@ -64,12 +61,12 @@ int expect(char **s, char c)
     return 0;
 }
 
-/* ADDED: déclarations des fonctions de parsing récursif */
+/* ADDED: declare here so you can use in parse_expr_r */
 static node *parse_expr_r(char **s);
 static node *parse_term   (char **s);
 static node *parse_factor (char **s);
 
-/* ADDED: parsing d’une expression (additions) */
+/* ADDED: function to handle + operators */
 /* THIS FUNCTION IS A COPY PASTE OF PARSE_TERM, YOU JUST HAVE TO REPLACE '*' by '+' !!!!!*/
 static node *parse_expr_r(char **s)
 {
@@ -91,6 +88,27 @@ static node *parse_expr_r(char **s)
 }
 
 
+/* ADDED: function to handle * operators*/
+static node *parse_term(char **s)
+{
+    node *left = parse_factor(s);
+    if (!left)
+    return NULL;
+    while (accept(s, '*')) {
+        node *right = parse_factor(s);
+        if (!right) {
+            destroy_tree(left);
+            return NULL;
+        }
+        node n = { .type = MULTI, .l = left, .r = right };
+        left = new_node(n);
+        if (!left)
+        return NULL;
+    }
+    return left;
+}
+
+
 /* ADDED: parsing number 0-9 and () */
 static node *parse_factor(char **s)
 {
@@ -103,7 +121,8 @@ static node *parse_factor(char **s)
         node *e = parse_expr_r(s);
         if (!e)
             return NULL;
-        if (!expect(s, ')')) {          // MOD: vérification de la parenthèse fermante
+        if (!expect(s, ')'))
+        { 
             destroy_tree(e);
             return NULL;
         }
@@ -113,29 +132,7 @@ static node *parse_factor(char **s)
     return NULL;
 }
 
-/* ADDED: parsing d’un terme (multiplications) */
-static node *parse_term(char **s)
-{
-    node *left = parse_factor(s);
-    if (!left)
-        return NULL;
-    while (accept(s, '*')) {
-        node *right = parse_factor(s);
-        if (!right) {
-            destroy_tree(left);
-            return NULL;
-        }
-        node n = { .type = MULTI, .l = left, .r = right };
-        left = new_node(n);
-        if (!left)
-            return NULL;
-    }
-    return left;
-}
-
-
-
-/* MODIFIED: parse_expr initialise un pointeur local et vérifie la fin de la chaîne */
+/* MODIFIED: safe copy of string pointer and initialize node pointer */
 node *parse_expr(char *s)
 {
     char *p = s;
@@ -157,7 +154,7 @@ int eval_tree(node *tree)
         case MULTI: return eval_tree(tree->l) * eval_tree(tree->r);
         case VAL:   return tree->val;
     }
-    return 0;  // should no happen, but who know's ?
+    return 0;  // ADDED
 }
 
 int main(int argc, char **argv)
@@ -169,5 +166,5 @@ int main(int argc, char **argv)
         return 1;
     printf("%d\n", eval_tree(tree));
     destroy_tree(tree);
-    return 0;
+    return 0; //ADDED
 }
